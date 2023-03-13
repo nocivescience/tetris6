@@ -1,7 +1,7 @@
 const gameClock=1000;
 const blockSideLength=30;
 const rows=20;
-const columns=30;
+const columns=10;
 const scoreWorth=10;
 var cuenta=0;
 
@@ -51,7 +51,7 @@ class Piece{
     constructor(shape,ctx){
         this.shape=shape;
         this.ctx=ctx;
-        this.x=Math.floor(columns/2);
+        this.x=Math.floor(columns/2)-1;
         this.y=0;
     }
     renderPiece(){
@@ -60,10 +60,9 @@ class Piece{
                 if(cell>0){
                     this.ctx.fillStyle=colors[cell];
                     this.ctx.fillRect(this.x+j,this.y+i,1,1);
-                    // this.ctx.strokeStyle='#000';
-                    // this.ctx.strokeRect(this.x+j,this.y+i,1,1);
-                    // this.ctx.fill();
-                    // this.ctx.stroke();
+                    this.ctx.strokeStyle='#dcdcdc';
+                    this.ctx.lineWidth=0.06;
+                    this.ctx.strokeRect(this.x+j,this.y+i,1,1);
                 }
             })
         })
@@ -111,9 +110,17 @@ class GameModel{
                 let cell=this.grid[i][j];
                 this.ctx.fillStyle=colors[cell];
                 this.ctx.fillRect(j,i,1,1);
+                if(this.grid[i][j]!==0){
+                    this.ctx.strokeStyle='#dcdcdc';
+                    this.ctx.lineWidth=0.06;
+                    this.ctx.strokeRect(j,i,1,1);
+                }else{
+                    this.ctx.strokeStyle='#494949';
+                    this.ctx.lineWidth=0.06;
+                    this.ctx.strokeRect(j,i,1,1);
+                }
             }
         }
-        console.log(this.grid);
         if(this.fallingPiece!==null){
             this.fallingPiece.renderPiece();
         }
@@ -139,9 +146,38 @@ class GameModel{
                 alert("Game Over");
                 this.grid=this.makeStartingGrid();
             }
-            this.fallingPiece.y=null;
+            this.fallingPiece=null;
         }else{
             this.fallingPiece.y++;
+        }
+        this.renderGameState();
+    }
+    move(right){
+        let x=this.fallingPiece.x;
+        let y=this.fallingPiece.y;
+        if(right){
+            if(!this.collision(x+1,y)){
+                this.fallingPiece.x++;
+            }
+        }else{
+            if(!this.collision(x-1,y)){
+                this.fallingPiece.x--;
+            }
+        }
+        this.renderGameState();
+    }
+    rotate(){
+        if(this.fallingPiece!==null){
+            let shape=[...this.fallingPiece.shape.map((row)=>[...row])];
+            for(let i=0;i<shape.length;++i){
+                for(let j=0;j<i;++j){
+                    [shape[i][j],shape[j][i]]=[shape[j][i],shape[i][j]];
+                }
+            }
+            shape.forEach((row)=>row.reverse());
+            if(!this.collision(this.fallingPiece.x,this.fallingPiece.y,shape)){
+                this.fallingPiece.shape=shape;
+            }
         }
         this.renderGameState();
     }
@@ -156,8 +192,8 @@ setInterval(()=>{
 let newGameState=()=>{
     fullSend();
     if(model.fallingPiece===null){
-        const random=Math.floor(Math.random()*shapes.length);
-        const newPiece=new Piece(shapes[4],ctx);
+        const random=Math.floor(Math.random()*(shapes.length-1))+1;
+        const newPiece=new Piece(shapes[random],ctx);
         model.fallingPiece= newPiece;
         model.moveDown();
     }else{
@@ -180,3 +216,15 @@ const fullSend=()=>{
         }
     }
 };
+document.addEventListener('keydown',(e)=>{
+    switch(e.key){
+        case 'ArrowLeft':
+            model.move(false);
+            break;
+        case 'ArrowRight':
+            model.move(true);
+            break;
+        case 'ArrowUp':
+            model.rotate();
+    }
+})
